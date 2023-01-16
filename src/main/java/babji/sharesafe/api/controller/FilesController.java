@@ -1,6 +1,7 @@
 package babji.sharesafe.api.controller;
 
 import babji.sharesafe.api.models.FileMetadata;
+import babji.sharesafe.api.models.FileObject;
 import babji.sharesafe.api.service.FileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -12,7 +13,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 
 @RestController
@@ -44,10 +48,14 @@ public class FilesController {
 
     @GetMapping("/files/{fileId}/download")
     public ResponseEntity downloadFile(@PathVariable("fileId") String fileId) {
-        String filePath = fileService.downloadFile(fileId);
-        File file = new File(filePath);
-
-        return ResponseEntity.ok().contentType(MediaType.APPLICATION_OCTET_STREAM).header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getName() + "\"").body(file);
+        try {
+            FileObject fileObject = fileService.downloadFile(fileId);
+            File file = new File(fileObject.getFileName());
+            Files.write(Paths.get(file.getPath()), fileObject.getFileContent());
+            return ResponseEntity.ok().contentType(MediaType.APPLICATION_OCTET_STREAM).header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getName() + "\"").body(file);
+        } catch (IOException exp) {
+            throw new RuntimeException(exp);
+        }
     }
 
     @DeleteMapping("/files/{fileId}")
