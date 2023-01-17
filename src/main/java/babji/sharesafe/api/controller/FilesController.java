@@ -1,6 +1,7 @@
 package babji.sharesafe.api.controller;
 
 import babji.sharesafe.api.models.FileMetadata;
+import babji.sharesafe.api.models.FileObject;
 import babji.sharesafe.api.service.FileService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -13,6 +14,8 @@ import org.springframework.web.multipart.MultipartFile;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.List;
 
 @RestController
@@ -26,12 +29,13 @@ public class FilesController {
     }
 
     @PostMapping("/files")
-    public FileMetadata createFile(@RequestBody FileMetadata fileMetadata) {
-        return fileService.createFile(fileMetadata);
+    public ResponseEntity<String> createFile(@RequestBody FileMetadata fileMetadata) {
+        fileService.createFile(fileMetadata);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @GetMapping("/files")
-    public List<FileMetadata> listFiles(@RequestParam(required = true) Integer limit) {
+    public List<FileMetadata> listFiles(@RequestParam Integer limit) {
         return fileService.getAllFiles(limit);
     }
 
@@ -43,11 +47,15 @@ public class FilesController {
     }
 
     @GetMapping("/files/{fileId}/download")
-    public ResponseEntity downloadFile(@PathVariable("fileId") String fileId) {
-        String filePath = fileService.downloadFile(fileId);
-        File file = new File(filePath);
-
-        return ResponseEntity.ok().contentType(MediaType.APPLICATION_OCTET_STREAM).header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getName() + "\"").body(file);
+    public ResponseEntity<File> downloadFile(@PathVariable("fileId") String fileId) {
+        try {
+            FileObject fileObject = fileService.downloadFile(fileId);
+            File file = new File(fileObject.getFileName());
+            Files.write(Paths.get(file.getPath()), fileObject.getFileContent());
+            return ResponseEntity.ok().contentType(MediaType.APPLICATION_OCTET_STREAM).header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + file.getName() + "\"").body(file);
+        } catch (IOException exp) {
+            throw new RuntimeException(exp);
+        }
     }
 
     @DeleteMapping("/files/{fileId}")
