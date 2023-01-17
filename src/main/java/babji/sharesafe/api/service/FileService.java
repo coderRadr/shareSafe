@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClientException;
 
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.List;
 
 @Slf4j
@@ -24,22 +23,19 @@ public class FileService {
         this.repository = repository;
     }
 
-    public FileMetadata createFile(FileMetadata fileMetadata) {
-        return fileMetadata;
+    public void createFile(FileMetadata fileMetadata) {
+        this.repository.createFileMetaData(fileMetadata);
     }
 
     public List<FileMetadata> getAllFiles(Integer limit) {
-        List<FileMetadata> response = List.of(FileMetadata.builder().id(1L)
-                .descr("Sample description")
-                .ownedBy(123L).name("Hello.txt").build());
-        return response;
+        return this.repository.listAllFiles(limit);
     }
 
     public boolean uploadFile(String fileId, byte[] fileContent) {
         try {
             repository.uploadFile(fileId, fileContent);
             return true;
-        }catch (IOException exp){
+        } catch (Exception exp) {
             log.error(exp.getMessage(), exp);
             return false;
         }
@@ -47,9 +43,8 @@ public class FileService {
 
     public FileObject downloadFile(String fileId) throws FileNotFoundException {
         try {
-            FileObject fileObject = repository.downloadFile(fileId);
-            return fileObject;
-        }catch (Exception exp) {
+            return repository.downloadFile(fileId);
+        } catch (Exception exp) {
             log.error(exp.getMessage(), exp);
             throw new FileNotFoundException(exp.getMessage());
         }
@@ -58,7 +53,7 @@ public class FileService {
     public void deleteFileById(String fileId) {
         try {
             repository.deleteFile(fileId);
-        }catch (Exception exp) {
+        } catch (Exception exp) {
             log.error(exp.getMessage(), exp);
             throw new RestClientException(exp.getMessage());
         }

@@ -13,7 +13,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -30,12 +29,13 @@ public class FilesController {
     }
 
     @PostMapping("/files")
-    public FileMetadata createFile(@RequestBody FileMetadata fileMetadata) {
-        return fileService.createFile(fileMetadata);
+    public ResponseEntity<String> createFile(@RequestBody FileMetadata fileMetadata) {
+        fileService.createFile(fileMetadata);
+        return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
     @GetMapping("/files")
-    public List<FileMetadata> listFiles(@RequestParam(required = true) Integer limit) {
+    public List<FileMetadata> listFiles(@RequestParam Integer limit) {
         return fileService.getAllFiles(limit);
     }
 
@@ -47,7 +47,7 @@ public class FilesController {
     }
 
     @GetMapping("/files/{fileId}/download")
-    public ResponseEntity downloadFile(@PathVariable("fileId") String fileId) {
+    public ResponseEntity<File> downloadFile(@PathVariable("fileId") String fileId) {
         try {
             FileObject fileObject = fileService.downloadFile(fileId);
             File file = new File(fileObject.getFileName());
